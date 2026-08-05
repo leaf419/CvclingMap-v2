@@ -1,0 +1,2 @@
+[permissions]
+allow = ["Bash=Get-ChildItem -Recurse -Force algorithm/output -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }\nif (-not (Get-ChildItem -Force algorithm/output -ErrorAction SilentlyContinue)) { Remove-Item -Recurse -Force algorithm/output; Write-Output \"algorithm/output removed (empty)\" }"]

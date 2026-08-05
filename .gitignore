@@ -1,0 +1,20 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# ── 前端 ──
+frontend/node_modules/
+frontend/dist/
+
+# ── 运行时配置 ──
+.env
+
+# ── 数据库层运行时产物（全量库文件过大不入库，通过其他渠道分发）──
+database/cache/*.db*
+database/bikeflow.sqlite
+database/bikeflow.sqlite-wal
+database/bikeflow.sqlite-shm
+
+# ── GeoScene ──
+*.gdb/

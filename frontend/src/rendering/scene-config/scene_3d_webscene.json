@@ -1,0 +1,62 @@
+{
+  "version": "2.0",
+  "type": "WebScene",
+  "title": "BikeFlowGNN Beijing 3D Scene",
+  "description": "北京六区骑行路线3D场景，融合建筑白模、街景观测点、Pareto路线管线叠加",
+  "sceneView": {
+    "viewingMode": "global",
+    "center": [116.40, 39.92],
+    "zoom": 14,
+    "camera": {
+      "position": {"x": 116.40, "y": 39.85, "z": 5000},
+      "heading": 0, "tilt": 45
+    }
+  },
+  "ground": {
+    "layers": [
+      {
+        "type": "TileLayer",
+        "url": "https://t0.tianditu.gov.cn/img_w/wmts?tk={token}",
+        "title": "天地图影像底图"
+      }
+    ]
+  },
+  "operationalLayers": [
+    {
+      "id": "buildings",
+      "type": "SceneLayer",
+      "url": "output/buildings_3d.geojson",
+      "title": "建筑白模",
+      "renderer": {
+        "type": "simple",
+        "symbol": {
+          "type": "PolygonSymbol3D",
+          "symbolLayers": [{
+            "type": "Extrude",
+            "material": {"color": [224, 224, 224]},
+            "edges": {"type": "solid", "color": [255, 255, 255, 50]}
+          }]
+        }
+      }
+    },
+    {
+      "id": "segments",
+      "type": "FeatureLayer",
+      "url": "output/segments.geojson",
+      "title": "街道段",
+      "elevationInfo": {"mode": "onTheGround"}
+    },
+    {
+      "id": "routes",
+      "type": "FeatureLayer",
+      "url": "output/routes.geojson",
+      "title": "Pareto 路线",
+      "elevationInfo": {"mode": "relativeToGround", "offset": 3}
+    }
+  ],
+  "slides": [
+    {"title": "全貌", "camera": {"position": [116.40, 39.92, 8000], "tilt": 60}},
+    {"title": "西城-海淀", "camera": {"position": [116.34, 39.94, 3000], "tilt": 45}},
+    {"title": "朝阳-CBD", "camera": {"position": [116.46, 39.92, 2000], "tilt": 40}}
+  ]
+}

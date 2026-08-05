@@ -1,0 +1,17 @@
+{
+  "serviceName": "BikeStations_MapService",
+  "type": "MapServer",
+  "capabilities": "Map,Query",
+  "description": "北京共享单车停车点地图服务（3,293个站点）",
+  "copyright": "BikeFlowGNN v2",
+  "spatialReference": {"wkid": 4326},
+  "initialExtent": {
+    "xmin": 116.1, "ymin": 39.7, "xmax": 116.6, "ymax": 40.1
+  },
+  "maxRecordCount": 5000,
+  "documentInfo": {
+    "Title": "BikeStations",
+    "Comments": "共享单车停车点位图层，用于路线周边站点密度分析",
+    "Subject": "骑行基础设施"
+  }
+}

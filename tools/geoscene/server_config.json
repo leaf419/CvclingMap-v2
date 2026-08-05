@@ -1,0 +1,90 @@
+{
+  "version": "2.0",
+  "description": "GeoScene Enterprise Server 服务发布配置",
+  "services": {
+    "bike_segments": {
+      "name": "BikeSegments_MapService",
+      "type": "MapServer",
+      "description": "北京六区骑行街道段地图服务",
+      "capabilities": "Map,Query,Data",
+      "data_source": "output/segments.geojson",
+      "target_fgdb": "geoscene/data/BikeFlowGNN.gdb",
+      "layers": [
+        {
+          "name": "StreetSegments",
+          "geometryType": "esriGeometryPolyline",
+          "fields": [
+            {"name": "seg_id", "type": "esriFieldTypeInteger"},
+            {"name": "length", "type": "esriFieldTypeDouble"},
+            {"name": "cost_composite", "type": "esriFieldTypeDouble"},
+            {"name": "w_safety", "type": "esriFieldTypeDouble"},
+            {"name": "w_comfort", "type": "esriFieldTypeDouble"},
+            {"name": "w_scenery", "type": "esriFieldTypeDouble"},
+            {"name": "f_traffic_stress", "type": "esriFieldTypeDouble"},
+            {"name": "v_beauty", "type": "esriFieldTypeDouble"},
+            {"name": "v_greenery", "type": "esriFieldTypeDouble"},
+            {"name": "pref_score", "type": "esriFieldTypeDouble"}
+          ],
+          "renderer": {
+            "type": "simple",
+            "symbol": {
+              "type": "esriSLS",
+              "style": "esriSLSSolid",
+              "color": [82, 183, 136, 255],
+              "width": 2
+            }
+          }
+        }
+      ]
+    },
+    "bike_stations": {
+      "name": "BikeStations_MapService",
+      "type": "MapServer",
+      "description": "北京共享单车停车点地图服务",
+      "capabilities": "Map,Query",
+      "data_source": "output/stations.geojson",
+      "target_fgdb": "geoscene/data/BikeFlowGNN.gdb",
+      "layers": [
+        {
+          "name": "BikeStations",
+          "geometryType": "esriGeometryPoint",
+          "fields": [
+            {"name": "station_id", "type": "esriFieldTypeInteger"},
+            {"name": "name", "type": "esriFieldTypeString"},
+            {"name": "capacity", "type": "esriFieldTypeInteger"}
+          ]
+        }
+      ]
+    },
+    "bike_routes": {
+      "name": "BikeRoutes_GeoCodeService",
+      "type": "GeoCodeServer",
+      "description": "骑行路线地理编码服务",
+      "capabilities": "ReverseGeocode",
+      "data_source": "output/routes.geojson"
+    },
+    "scene_3d": {
+      "name": "Beijing3D_WebScene",
+      "type": "WebScene",
+      "description": "北京3D骑行场景（SceneView）",
+      "data_source": "output/buildings_3d.geojson",
+      "extrude_field": "height_m",
+      "basemap": "tianditu_vec_c"
+    }
+  },
+  "gdb_structure": {
+    "path": "geoscene/data/BikeFlowGNN.gdb",
+    "feature_datasets": [
+      {
+        "name": "StreetNetwork",
+        "spatial_reference": {"wkid": 4326},
+        "feature_classes": ["StreetSegments", "Junctions"]
+      },
+      {
+        "name": "POI",
+        "spatial_reference": {"wkid": 4326},
+        "feature_classes": ["BikeStations", "Observations"]
+      }
+    ]
+  }
+}

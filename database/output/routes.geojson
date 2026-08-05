@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.367,
+            39.898
+          ],
+          [
+            116.362,
+            39.898
+          ],
+          [
+            116.357,
+            39.898
+          ],
+          [
+            116.352,
+            39.898
+          ],
+          [
+            116.347,
+            39.898
+          ]
+        ]
+      },
+      "properties": {
+        "route_id": 0,
+        "total_length": 1709.7950484378903,
+        "total_cost": 978.2108320733912,
+        "avg_safety": 0.3507931940818074,
+        "avg_comfort": 0.5551841586253953,
+        "avg_scenery": 0.417810135703802,
+        "avg_traffic_stress": 0.4166240090227017,
+        "avg_beauty": 0.553118280044058,
+        "avg_pref_score": 0.5,
+        "num_segments": 4
+      }
+    }
+  ]
+}

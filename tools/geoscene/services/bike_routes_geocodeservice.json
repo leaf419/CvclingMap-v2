@@ -1,0 +1,12 @@
+{
+  "serviceName": "BikeRoutes_GeoCodeService",
+  "type": "GeoCodeServer",
+  "capabilities": "ReverseGeocode",
+  "description": "Pareto最优路线地理编码服务，支持反向地理编码查询路线附近的POI和设施",
+  "copyright": "BikeFlowGNN v2",
+  "spatialReference": {"wkid": 4326},
+  "locatorProperties": {
+    "MinimumCandidateScore": 50,
+    "SideOffset": 0
+  }
+}

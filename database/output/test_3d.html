@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>北京3D城市底图</title>
+<style>
+  body { margin:0; overflow:hidden; background:#0d1117; font-family:sans-serif; }
+  #status { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#aaa; font-size:18px; z-index:10; }
+  #info { position:absolute; top:10px; left:10px; color:#888; font-size:13px; pointer-events:none; z-index:10; }
+</style>
+</head>
+<body>
+<div id="status">加载中...</div>
+<div id="info"></div>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.170.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const statusDiv = document.getElementById('status');
+const infoDiv = document.getElementById('info');
+
+// ── 场景 ──
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0d1117');
+scene.fog = new THREE.Fog('#0d1117', 5000, 40000);
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 50, 120000);
+camera.position.set(0, 20000, 12000); camera.lookAt(0, 0, 0);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0); controls.maxPolarAngle = Math.PI/2.2;
+controls.minDistance = 2000; controls.maxDistance = 50000;
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+
+// ── 光照 ──
+scene.add(new THREE.AmbientLight('#8899aa', 0.5));
+const sun = new THREE.DirectionalLight('#ffffff', 0.8);
+sun.position.set(8000, 20000, 5000); scene.add(sun);
+scene.add(new THREE.HemisphereLight('#334455', '#0d1117', 0.3));
+
+// ── 坐标 ──
+const REF_LON = 116.37, REF_LAT = 39.92;
+const D2ML = 111320*Math.cos(REF_LAT*Math.PI/180), D2MT = 111320;
+function to3D(lon, lat, y=0) { return [(lon-REF_LON)*D2ML, y, -(lat-REF_LAT)*D2MT]; }
+const HALF = 35000, TSIZE = 2048;
+function toPx(x3d, z3d) { return { px: (x3d+HALF)/(HALF*2)*TSIZE, py: (z3d+HALF)/(HALF*2)*TSIZE }; }
+
+// ── 地面平面 ──
+const groundGeo = new THREE.PlaneGeometry(HALF*2, HALF*2);
+groundGeo.rotateX(-Math.PI/2);
+const ground = new THREE.Mesh(groundGeo, new THREE.MeshPhongMaterial({ color:'#1a1e28' }));
+ground.position.y = -0.5; scene.add(ground);
+
+// ── 并行加载 ──
+statusDiv.textContent = '加载数据...';
+Promise.all([
+  fetch('/data/buildings.geojson').then(r=>r.json()),
+  fetch('/data/segments.geojson').then(r=>r.json()),
+]).then(([bldGeo, segGeo]) => {
+  const bldFeatures = bldGeo.features || [];
+  const segFeatures = segGeo.features || [];
+  statusDiv.textContent = `渲染 ${bldFeatures.length} 栋建筑 + ${segFeatures.length} 条路网...`;
+
+  // ── 1. 地图纹理 ──
+  const canvas = document.createElement('canvas');
+  canvas.width = TSIZE; canvas.height = TSIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1e28'; ctx.fillRect(0, 0, TSIZE, TSIZE);
+
+  // 网格
+  ctx.strokeStyle = '#222838'; ctx.lineWidth = 0.5;
+  for (let i=0; i<TSIZE; i+=TSIZE/20) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,TSIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(TSIZE,i); ctx.stroke(); }
+
+  // 建筑轮廓
+  ctx.fillStyle = '#222a38';
+  for (const f of bldFeatures) {
+    let ring = parseCoords(f);
+    if (!ring || ring.length<3) continue;
+    ctx.beginPath();
+    const p0 = toPx(ring[0][0], ring[0][2]); ctx.moveTo(p0.px, p0.py);
+    for (let k=1; k<ring.length; k++) { const p = toPx(ring[k][0], ring[k][2]); ctx.lineTo(p.px, p.py); }
+    ctx.closePath(); ctx.fill();
+  }
+
+  // 路网
+  ctx.strokeStyle = '#2a4058'; ctx.lineWidth = 1;
+  for (const f of segFeatures) {
+    const coords = f.geometry?.coordinates || [];
+    if (coords.length<2) continue;
+    ctx.beginPath();
+    const [sx,,sz] = to3D(coords[0][0], coords[0][1]); const s = toPx(sx,sz); ctx.moveTo(s.px, s.py);
+    for (let k=1; k<coords.length; k++) { const [x,,z] = to3D(coords[k][0], coords[k][1]); const p = toPx(x,z); ctx.lineTo(p.px, p.py); }
+    ctx.stroke();
+  }
+
+  // 应用纹理
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  ground.material = new THREE.MeshPhongMaterial({ map:tex, color:'#ffffff' });
+
+  // ── 2. 六区轮廓 ──
+  const districts = [
+    {n:'海淀区',lon:116.310,lat:39.959,c:'#3a6b8c',sl:0.055,st:0.040},
+    {n:'西城区',lon:116.366,lat:39.915,c:'#5a8a5a',sl:0.030,st:0.025},
+    {n:'东城区',lon:116.418,lat:39.929,c:'#8a6a3a',sl:0.025,st:0.025},
+    {n:'朝阳区',lon:116.443,lat:39.921,c:'#7a5a8a',sl:0.050,st:0.045},
+    {n:'石景山区',lon:116.222,lat:39.909,c:'#6a8a8a',sl:0.030,st:0.025},
+    {n:'丰台区',lon:116.287,lat:39.858,c:'#8a8a5a',sl:0.040,st:0.035},
+  ];
+  districts.forEach(d=>{
+    const [cx,,cz]=to3D(d.lon,d.lat); const hw=d.sl*D2ML/2, hd=d.st*D2MT/2;
+    const sh=new THREE.Shape(); sh.moveTo(-hw,-hd); sh.lineTo(hw,-hd); sh.lineTo(hw,hd); sh.lineTo(-hw,hd); sh.closePath();
+    const g=new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI/2);
+    const r=new THREE.Mesh(g,new THREE.MeshPhongMaterial({color:d.c,transparent:true,opacity:0.15,side:THREE.DoubleSide}));
+    r.position.set(cx,0.12,cz); scene.add(r);
+    const pts=[new THREE.Vector3(cx-hw,0.18,cz-hd),new THREE.Vector3(cx+hw,0.18,cz-hd),new THREE.Vector3(cx+hw,0.18,cz+hd),new THREE.Vector3(cx-hw,0.18,cz+hd),new THREE.Vector3(cx-hw,0.18,cz-hd)];
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:d.c,opacity:0.5,transparent:true})));
+    const cv=document.createElement('canvas'); cv.width=256; cv.height=64;
+    const c2=cv.getContext('2d'); c2.fillStyle='#ffffffcc'; c2.font='bold 32px "Microsoft YaHei",sans-serif'; c2.textAlign='center'; c2.fillText(d.n,128,40);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthTest:false}));
+    sp.position.set(cx,200,cz); sp.scale.set(3000,750,1); scene.add(sp);
+  });
+
+  // ── 3. 建筑白模 ──
+  const bMat = new THREE.MeshPhongMaterial({color:'#d4dae2',specular:'#8899aa',shininess:5,flatShading:true,transparent:true,opacity:0.92});
+  const eMat = new THREE.LineBasicMaterial({color:'#8899aa',transparent:true,opacity:0.3});
+  for (const f of bldFeatures) {
+    let ring = parseCoords(f);
+    if (!ring || ring.length<3) continue;
+    let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+    for (const [x,,z] of ring) { if(x<minX)minX=x; if(x>maxX)maxX=x; if(z<minZ)minZ=z; if(z>maxZ)maxZ=z; }
+    const w=maxX-minX, d=maxZ-minZ, cx=(minX+maxX)/2, cz=(minZ+maxZ)/2, h=(f.properties?.height_m||9)*3;
+    const box=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),bMat);
+    box.position.set(cx,h/2,cz); scene.add(box);
+    const edge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d)),eMat);
+    edge.position.copy(box.position); scene.add(edge);
+  }
+
+  // ── 4. 路网 3D 线条 ──
+  const rMat = new THREE.LineBasicMaterial({color:'#4a6a8a',transparent:true,opacity:0.55});
+  for (const f of segFeatures) {
+    const coords = f.geometry?.coordinates||[]; if (coords.length<2) continue;
+    const pts = coords.map(c=>new THREE.Vector3(...to3D(c[0],c[1],0.8)));
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),rMat));
+  }
+
+  statusDiv.textContent = '';
+  infoDiv.textContent = `北京 OSM: ${bldFeatures.length} 栋建筑 | ${segFeatures.length} 条路网 | 六区`;
+  console.log('渲染完成');
+}).catch(err=>{ statusDiv.textContent='加载失败: '+err.message; console.error(err); });
+
+// ── 坐标解析 ──
+function parseCoords(feat) {
+  const c = feat.geometry?.coordinates; if (!c||!Array.isArray(c)) return null;
+  const first = c[0];
+  if (first&&typeof first==='object'&&!Array.isArray(first)&&'lat' in first) return c.map(p=>to3D(p.lon,p.lat,0));
+  if (Array.isArray(first)&&first.length>=2&&typeof first[0]==='number') return c[0].map(p=>to3D(p[0],p[1],0));
+  return null;
+}
+
+// ── 动画 ──
+function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
+animate();
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "version": "2.0",
+  "type": "WebScene",
+  "sceneView": {
+    "viewingMode": "global",
+    "center": [
+      116.4,
+      39.92
+    ],
+    "zoom": 14
+  },
+  "center": [
+    116.4,
+    39.92
+  ],
+  "zoom": 14,
+  "layers": [
+    "segments",
+    "stations",
+    "routes"
+  ],
+  "projection": "EPSG:4326",
+  "terrain": {
+    "enabled": false
+  },
+  "buildings": {
+    "enabled": true,
+    "extrude": true
+  }
+}

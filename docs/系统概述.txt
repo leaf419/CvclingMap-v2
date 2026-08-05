@@ -1,0 +1,44 @@
+# 系统概述
+
+## 作品背景
+
+北京作为超大城市，骑行出行需求日益增长。然而，现有的骑行导航系统仅基于最短路径，
+缺乏对骑行安全性、舒适度、风景质量的多维考量。本作品基于 GeoScene Enterprise GIS 平台，
+融合街景视觉大模型（VLM）指标、海量 POI 和共享单车站点数据，
+构建异构图神经网络（HGT-GNN）驱动的智能骑行路线推荐系统。
+
+## 系统架构（六层）
+
+- **数据库层 database/**：真实数据库系统（SQLite），全量数据分门别类存储
+  （街景指标 10,131 条、POI 80 万、共享单车停车点 3,293、街道段/建筑/区域轮廓），
+  提供统一访问层 repository 供算法层与网关层读取。
+- **算法层 algorithm/**：纯算法引擎（零 Web 依赖），实现五阶段流水线：
+  多源数据加载 → 5 类节点 6 类边异构图构建（city2graph）→ 街景指标传播与四维边权模型
+  → HGT-GNN 偏好学习（可选）→ NSGA-II 多目标 Pareto 路径搜索与个性化推荐。
+- **网关层 gateway/**：FastAPI 网关，负责 API 编排、路线缓存（SQLite），
+  并集成 GeoScene Enterprise Server（服务器端 GIS 核心，比赛强制要求），
+  GeoScene 可用时代理地图/场景服务，不可用时回退本地数据。
+- **交互层 interaction/**：前端单工程内模块，提供搜索控制面板、Pareto 路线对比、
+  指标面板、图层控制等用户交互。
+- **渲染层 rendering/**：前端单工程内模块，基于 Three.js 的 3D 场景（建筑白模、
+  街道网、Pareto 路线管线叠加），场景配置来自 GeoScene WebScene 定义，
+  渲染数据由 rendering/export 导出。
+- **工具库 tools/**：与平台运行相对无关的工具，包括 OSM/天地图数据爬虫、
+  GeoScene 服务发布脚本、File Geodatabase 交付说明与 notebook 研究。
+
+## 主要功能
+
+1. **街景指标感知**：2563 个采样点 × 4 方向 × 37 个 VLM 指标，confidence 加权聚合
+2. **异构图构建**：city2graph 生成 5 类节点 6 类边的城市形态异构图（~94 万节点）
+3. **四维边权模型**：安全/舒适/风景/综合体验加权融合为综合骑行成本
+4. **GNN 偏好学习**：HGT Transformer + NeighborSampler mini-batch 训练（RTX 4060 8GB）
+5. **NSGA-II 搜索**：4 目标 Pareto 最优路线集，支持 4 种用户画像（通勤/旅游/健身/家庭）
+6. **GeoScene 3D**：建筑白模、街景观测球体、路线管线叠加的三维场景
+
+## 特点
+
+- GIS 核心架构基于 GeoScene Enterprise Server（满足比赛强制要求）
+- 数据存储采用真实数据库系统（SQLite 空间库）+ File Geodatabase（交付格式）
+- 底图使用天地图数据，数据为中国境内数据（北京六区）
+- Algorithm 层零 Web 依赖，可独立运行；六层职责清晰、可扩展
+- 56+ 个自动化测试用例，TypeScript 零编译错误

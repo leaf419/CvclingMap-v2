@@ -1,0 +1,18 @@
+{
+  "serviceName": "BikeSegments_MapService",
+  "type": "MapServer",
+  "capabilities": "Map,Query,Data",
+  "description": "北京六区骑行街道段地图服务（含安全性、舒适度、风景指数、综合成本）",
+  "copyright": "BikeFlowGNN v2",
+  "spatialReference": {"wkid": 4326},
+  "initialExtent": {
+    "xmin": 116.1, "ymin": 39.7, "xmax": 116.6, "ymax": 40.1
+  },
+  "maxRecordCount": 10000,
+  "tileInfo": null,
+  "documentInfo": {
+    "Title": "BikeSegments",
+    "Comments": "骑行街道段图层，包含街景指标传播后的四维边权",
+    "Subject": "骑行路线分析"
+  }
+}
