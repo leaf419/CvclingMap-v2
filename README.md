@@ -1,4 +1,4 @@
-# BikeFlowGNN v2 — 骑行路线智能推荐系统
+# CyclingMap-v2 — 骑行路线智能推荐系统
 
 融合 GeoScene Enterprise GIS + 异构图神经网络（HGT-GNN）+ 街景 VLM 指标的北京骑行路线智能分析平台。
 
